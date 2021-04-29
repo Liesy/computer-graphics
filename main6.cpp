@@ -1,7 +1,8 @@
 //
 // Created by sdu-cs-ai ly on 2021/4/28.
 // 实现bezier和b样条
-// 参考glfw实现 https://blog.csdn.net/HANZY72/article/details/109555198
+// bezier glfw实现 https://blog.csdn.net/HANZY72/article/details/109555198
+// b样条 glfw实现 https://blog.csdn.net/HANZY72/article/details/109555203
 //
 
 #include <GL/glut.h>
@@ -23,6 +24,7 @@ struct info{
         y=yy;
     }
 };
+bool cmp(info a,info b){return a.x<b.x;}
 vector<info> points;//存点
 vector<vector<info>> per;
 int cnt=0,k=0;//控制点个数，按下键盘的次数
@@ -103,6 +105,7 @@ void bezier(){
     }
 }
 
+// 3次4阶B样条
 void B(){
 
 }
@@ -117,6 +120,7 @@ void mouse_click(int button, int state, int x, int y) {
             info new_point(x,y);
             cnt++;
             points.emplace_back(new_point);
+            sort(points.begin(),points.end(),cmp);
             bezier();
 //            B();
         } else{//拖动
