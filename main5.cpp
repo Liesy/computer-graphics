@@ -10,27 +10,48 @@
 #include <list>
 #include <cmath>
 
+#define WIDTH 600.0f
+#define HEIGHT 600.0f
+
 using namespace std;
 
-float times = 1;//放大、缩小倍数
-float mousex, mousey;//鼠标位置
-
-float zb[601][601];
-float zc[601][601];
+int zb;
 //三角形a的初始点
-float a1x = 100, a1y = 100, a1z = 1;
-float a2x = 200, a2y = 100, a2z = -0.5;
-float a3x = 150, a3y = 250, a3z = -0.8;
+float a1x = 100, a1y =200, a1z = 0;
+float a2x = 400, a2y = 200, a2z = 100;
+float a3x = 200, a3y = 400, a3z = 100;
 //三角形b的初始点
-float b1x = 150, b1y = 150, b1z = -0.5;
-float b2x = 250, b2y = 150, b2z = 1;
-float b3x = 200, b3y = 300, b3z = 0;
+float b1x = 100, b1y = 200, b1z = 0;
+float b2x = 300, b2y = 200, b2z = 0;
+float b3x = 400, b3y = 400, b3z = 300;
 
 float alpha, beta, gamma;
 
+bool same_direction(float a, float b) {
+    if ((a >= 0 && b >= 0) || (a <= 0 && b <= 0))
+        return true;
+    else
+        return false;
+}
+
+bool in_same_side(pair<float, float> a, pair<float, float> b, pair<float, float> c) {
+    int z1 = a.first * c.second - a.second * c.first;
+    int z2 = b.first * c.second - b.second * c.first;
+    if (same_direction(z1, z2))
+        return true;
+    else
+        return false;
+}
+
 //判断是否在三角形 a 中
 bool in_a(int x, int y) {
-    if (y >= 100 && (3 * x - y - 200 >= 0) && (3 * x + y - 700 <= 0))
+    pair<float, float> AP = make_pair(x - a1x, y - a1y),
+            BP = make_pair(x - a2x, y - a2y),
+            AB = make_pair(a2x - a1x, a2y - a1y),
+            AC = make_pair(a3x - a1x, a3y - a1y),
+            BA = make_pair(a1x - a2x, a1y - a2y),
+            BC = make_pair(a3x - a2x, a3y - a2y);
+    if (in_same_side(AP, AB, AC) && in_same_side(AP, AC, AB) && in_same_side(BP, BA, BC))
         return true;
     else
         return false;
@@ -38,7 +59,13 @@ bool in_a(int x, int y) {
 
 //判断是否在三角形 b 中
 bool in_b(int x, int y) {
-    if (y >= 150 && (3 * x - y - 300 >= 0) && (3 * x + y - 900 <= 0))
+    pair<float, float> AP = make_pair(x - b1x, y - b1y),
+            BP = make_pair(x - b2x, y - b2y),
+            AB = make_pair(b2x - b1x, b2y - b1y),
+            AC = make_pair(b3x - b1x, b3y - b1y),
+            BA = make_pair(b1x - b2x, b1y - b2y),
+            BC = make_pair(b3x - b2x, b3y - b2y);
+    if (in_same_side(AP, AB, AC) && in_same_side(AP, AC, AB) && in_same_side(BP, BA, BC))
         return true;
     else
         return false;
@@ -71,8 +98,7 @@ void init() {
     glClearColor(0.0, 0.0, 0.0, 0.0);//背景为黑色
     glMatrixMode(GL_PROJECTION);//设置合适的矩阵
     glLoadIdentity();
-    glColor3f(1.0, 1.0, 1.0);//设置颜色
-    glPointSize(5.0);
+//    glPointSize(5.0);
 }
 
 //清屏
@@ -83,65 +109,53 @@ void clear_screen() {
 }
 
 //反走样画点
-void point_paint(int x, int y, int z) {
-    glEnable(GL_POINT_SMOOTH);//开启抗锯齿
-    glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);//点的反走样, GL_NICEST为给出最高质量的选择
-
-//    glPointSize(2);
-    glScalef(times, times, times);//缩放
+void point_paint(int x, int y, float r, float g, float b) {
+    glColor3f(r, g, b);
     glBegin(GL_POINTS);
-    glVertex3i(x, y, z);
+    glVertex2i(x, y);
     glEnd();
-
     glFlush();//不经过缓冲区，上面的代码立即执行
 }
 
-void mydisplay() {
+void Zbuffering() {
     clear_screen();
-    for(int i=0;i<=600;i++)
-        for(int j=0;j<=600;j++){
-            zb[i][j]=-1;
-            zc[i][j]=1;
-            if(in_a(i,j)){
-                float adeepth= deepth_a(i,j);
-                if(adeepth>zb[i][j]){
-                    zb[i][j]=adeepth;
-                    zc[i][j]=2;
+    float r, g, b;
+    for (int i = 0; i <= 600; i++)
+        for (int j = 0; j <= 600; j++) {
+            zb = -500;
+            if (in_a(i, j)) {
+                float deepth = deepth_a(i, j);
+                if (deepth > float(zb)) {
+                    r = g = b = 0;
+                    if (in_a(float(i) + 0.25, float(j) + 0.25))
+                        g += 0.25;
+                    if (in_a(float(i) + 0.25, float(j) - 0.25))
+                        g += 0.25;
+                    if (in_a(float(i) - 0.25, float(j) + 0.25))
+                        g += 0.25;
+                    if (in_a(float(i) - 0.25, float(j) - 0.25))
+                        g += 0.25;
+                    zb = int(deepth);
                 }
             }
-            if(in_b(i,j)){
-                float bdeepth= deepth_b(i,j);
-                if(bdeepth>zb[i][j]){
-                    zb[i][j]=bdeepth;
-                    zc[i][j]=3;
+            if (in_b(i, j)) {
+                float deepth = deepth_b(i, j);
+                if (deepth > float(zb)) {
+                    r = g = b = 0;
+                    if (in_b(float(i) + 0.25, float(j) + 0.25))
+                        b += 0.25;
+                    if (in_b(float(i) + 0.25, float(j) - 0.25))
+                        b += 0.25;
+                    if (in_b(float(i) - 0.25, float(j) + 0.25))
+                        b += 0.25;
+                    if (in_b(float(i) - 0.25, float(j) - 0.25))
+                        b += 0.25;
+                    zb = int(deepth);
                 }
             }
+            if (zb != -500)
+                point_paint(i, j, r, g, b);
         }
-    for(int i=0;i<=600;i++)
-        for(int j=0;j<=600;j++){
-            if(zc[i][j]==1)
-                continue;
-            else if(zc[i][j]==2)
-                glColor3f(0.1f,0.7f,0.3f);
-            else if(zc[i][j]==3)
-                glColor3f(0.7f,0.4f,0.9f);
-
-            point_paint(i,j,zb[i][j]);
-        }
-}
-
-//鼠标滚轮缩放操作
-void mouse_click(int button, int state, int x, int y) {
-    //左键变大
-    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
-        times = 0.05f + 1;
-        mydisplay();
-    }
-        //右键变小
-    else if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN) {
-        times = -0.05f + 1;
-        mydisplay();
-    }
 }
 
 int main(int argc, char *argv[]) {
@@ -154,11 +168,10 @@ int main(int argc, char *argv[]) {
 
     glutCreateWindow("experiment_5");
 
-    gluOrtho2D(0, 600, 0, 600);
+    gluOrtho2D(0, WIDTH, 0, HEIGHT);
 
     init();
-    glutDisplayFunc(mydisplay);
-    glutMouseFunc(mouse_click);
+    glutDisplayFunc(Zbuffering);
 
     glutMainLoop();
     return 0;
