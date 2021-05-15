@@ -20,11 +20,11 @@
 using namespace std;
 
 struct info {
-    int x, y;
+    float x, y;
 
     info() {}
 
-    info(int xx, int yy) {
+    info(float xx, float yy) {
         x = xx;
         y = yy;
     }
@@ -45,8 +45,7 @@ bool cmp(info a, info b) { return a.x < b.x; }
 vector<info> points;//存点
 vector<vector<info>> per;
 int cnt = 0;//控制点个数
-bool can_draw = true;
-int x11, y11, x22, y22;
+float x11, y11, x22, y22;
 
 //初始化设置
 void init() {
@@ -54,7 +53,6 @@ void init() {
     glMatrixMode(GL_PROJECTION);//设置合适的矩阵
     glLoadIdentity();
     glColor3f(1.0, 1.0, 1.0);//设置颜色
-//    glPointSize(2);
 }
 
 //清屏
@@ -65,20 +63,20 @@ void clear_screen() {
 }
 
 //画点
-void point_paint(int x, int y) {
+void point_paint(float x, float y) {
     glBegin(GL_POINTS);
     glColor3f(1.0, 1.0, 1.0);
-    glVertex2i(x, 600 - y);
+    glVertex2f(x, HEIGHT - y);
     glEnd();
     glFlush();
 }
 
 //画线
-void line_paint(int x1, int y1, int x2, int y2) {
+void line_paint(float x1, float y1, float x2, float y2) {
     glBegin(GL_LINES);
     glColor3f(1.0, 1.0, 1.0);
-    glVertex2d(x1, 600 - y1);
-    glVertex2d(x2, 600 - y2);
+    glVertex2f(x1, HEIGHT - y1);
+    glVertex2f(x2, HEIGHT - y2);
     glEnd();
     glFlush();
 }
@@ -123,7 +121,7 @@ void bezier() {
 }
 
 vector<double> T;//节点向量[0,..,tn+k]
-int k = 4;//三阶B样条
+int k = 4;//三次B样条
 vector<info> deBo;
 vector<info> bspline_points;
 
@@ -143,7 +141,6 @@ void deBoor(int j, double t) {
             deBo[i] = (deBo[i] * n1) + (deBo[i - 1] * n2);
         }
     }
-//    point_paint(deBo[j].x,deBo[j].y);
     bspline_points.emplace_back(deBo[j]);
 }
 
@@ -165,50 +162,44 @@ void B() {
     }
     deBo.clear();
     bspline_points.clear();
-    deBo = points;
     //初始化节点向量
     uniform_KnotVector();
 
-    for (int j = k - 1; j <= cnt; j++)
+    //B样条曲线所对应的节点向量区间为t_(k-1)到t_(n+1)
+    for (int j = k - 1; j <= cnt - 1; j++)
         for (double t = T[j]; t < T[j + 1]; t += 0.001)
             deBoor(j, t);
 
     for (auto p:bspline_points)
-        point_paint(p.x,p.y);
+        point_paint(p.x, p.y);
 }
 
 void mydisplay() {}
 
-//鼠标动作, 滚轮控制左键是加点还是拖动， 右键删点, 滚轮按下切换加点和拖动
+//鼠标动作
 void mouse_click(int button, int state, int x, int y) {
     if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
-        if (can_draw) {//加点
-            point_paint(x, y);
-            info new_point(x, y);
-            cnt++;
-            points.emplace_back(new_point);
-//            sort(points.begin(), points.end(), cmp);
-//            bezier();
-            B();
-        } else {//拖动
-
-        }
+        point_paint(x, y);
+        info new_point(x, y);
+        cnt++;
+        points.emplace_back(new_point);
+        sort(points.begin(), points.end(), cmp);
+        bezier();
+//            B();
     }
     if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN) {
         if (cnt != 0) {
             points.erase(points.end());
             cnt--;
         }
-//        bezier();
-        B();
+        bezier();
+//        B();
     }
-    if (button == GLUT_MIDDLE_BUTTON && state == GLUT_DOWN)
-        can_draw = !can_draw;
 }
 
 int main(int argc, char *argv[]) {
     glutInit(&argc, argv);
-    glutInitWindowSize(600, 600);
+    glutInitWindowSize(WIDTH, HEIGHT);
     glutInitWindowPosition(200, 100);
 
     //指定显示模式的类型
